@@ -54,7 +54,7 @@ public class ConnectThread implements Runnable {
             e.printStackTrace();
             running = false;
             if (callBack != null) {
-                callBack.error(e.getMessage());
+                callBack.connectError(e.getMessage());
             }
         } finally {
             running = false;

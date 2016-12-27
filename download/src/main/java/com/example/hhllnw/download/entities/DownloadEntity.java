@@ -44,6 +44,12 @@ public class DownloadEntity implements Serializable {
         this.name = name;
     }
 
+    public void reSet() {
+        this.setPercent(0);
+        this.setCurLength(0);
+        this.setRanges(null);
+    }
+
     public enum Status {idle, connecting, err, waiting, downloading, pause, resume, cancel, completed}
 
 

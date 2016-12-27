@@ -9,7 +9,9 @@ public interface DownloadCallBack {
 
     void downloadComplete(int index);
 
-    void error(String message);
+    void onDownloadError(int index, String message);
 
     void downloadPause();
+
+    void downloadCancel();
 }

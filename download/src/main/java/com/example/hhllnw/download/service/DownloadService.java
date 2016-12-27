@@ -54,12 +54,14 @@ public class DownloadService extends Service {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
+            this.obtainMessage();
             DownloadEntity entity = (DownloadEntity) msg.obj;
             if (entity == null) return;
             switch (entity.getStatus()) {
                 case completed:
                 case cancel:
                 case pause:
+                case err:
                     tasks.remove(entity);
                     nextDownload();
                     break;
@@ -84,6 +86,10 @@ public class DownloadService extends Service {
         int action = -1;
         if (intent.hasExtra(Constants.KEY_INTENT_ENTITY)) {
             entity = (DownloadEntity) intent.getSerializableExtra(Constants.KEY_INTENT_ENTITY);
+        }
+
+        if (entity != null && entity.getId() != null && mDataChanger.containsDownloadEntity(entity.getId())) {
+            entity = mDataChanger.queryDownloadEntityById(entity.getId());
         }
 
         if (intent.hasExtra(Constants.KEY_INTENT_ACTION)) {
@@ -216,9 +222,9 @@ public class DownloadService extends Service {
             while (iterator.hasNext()) {
                 DownloadEntity entity = iterator.next();
                 if (entity != null) {
-                    if (entity.getStatus() == DownloadEntity.Status.downloading) {
+                    /*if (entity.getStatus() == DownloadEntity.Status.pause) {
                         entity.setStatus(DownloadEntity.Status.downloading);
-                    }
+                    }*/
                     mDataChanger.addEntityToMap(entity);
                 }
             }

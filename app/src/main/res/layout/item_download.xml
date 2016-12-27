@@ -28,4 +28,13 @@
         android:background="@color/colorAccent"
         android:text="hh"
         android:textColor="#ffffff" />
+
+    <Button
+        android:id="@+id/item_btn_cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="11dp"
+        android:background="@color/colorAccent"
+        android:text="取消"
+        android:textColor="#ffffff" />
 </LinearLayout>

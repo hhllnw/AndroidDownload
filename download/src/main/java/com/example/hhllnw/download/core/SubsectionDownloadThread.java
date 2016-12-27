@@ -28,6 +28,8 @@ public class SubsectionDownloadThread implements Runnable {
     private String path;
     private DownloadEntity.Status mStatus;
     private boolean isPause;
+    private boolean isCancelled;
+    private boolean isError;
 
     public SubsectionDownloadThread(String url, int index, int startPosition, int endPosition, DownloadCallBack callBack) {
         this.url = url;
@@ -66,7 +68,7 @@ public class SubsectionDownloadThread implements Runnable {
                 byte[] buffer = new byte[2048];
                 int len = -1;
                 while ((len = in.read(buffer)) != -1) {
-                    if (isPause) {
+                    if (isPause || isCancelled || isError) {
                         break;
                     }
                     accessFile.write(buffer, 0, len);
@@ -78,6 +80,12 @@ public class SubsectionDownloadThread implements Runnable {
                     if (isPause) {
                         mStatus = DownloadEntity.Status.pause;
                         callBack.downloadPause();
+                    } else if (isCancelled) {
+                        mStatus = DownloadEntity.Status.cancel;
+                        callBack.downloadCancel();
+                    } else if (isError) {
+                        mStatus = DownloadEntity.Status.err;
+                        callBack.onDownloadError(index, "err");
                     } else {
                         mStatus = DownloadEntity.Status.completed;
                         callBack.downloadComplete(index);
@@ -88,11 +96,15 @@ public class SubsectionDownloadThread implements Runnable {
             e.printStackTrace();
             if (callBack != null) {
                 if (isPause) {
+                    mStatus = DownloadEntity.Status.pause;
                     callBack.downloadPause();
+                } else if (isCancelled) {
+                    mStatus = DownloadEntity.Status.cancel;
+                    callBack.downloadCancel();
                 } else {
-                    callBack.error(e.getMessage());
+                    mStatus = DownloadEntity.Status.err;
+                    callBack.onDownloadError(index, e.getMessage());
                 }
-
             }
         } finally {
             if (connection != null)
@@ -139,5 +151,21 @@ public class SubsectionDownloadThread implements Runnable {
         return mStatus == DownloadEntity.Status.pause || mStatus == DownloadEntity.Status.completed;
     }
 
+    public void cancel() {
+        isCancelled = true;
+        Thread.currentThread().interrupt();
+    }
 
+    public boolean isCancel() {
+        return mStatus == DownloadEntity.Status.cancel || mStatus == DownloadEntity.Status.completed;
+    }
+
+    public boolean isError() {
+        return mStatus == DownloadEntity.Status.err;
+    }
+
+    public void cancelByError() {
+        isError = true;
+        Thread.currentThread().interrupt();
+    }
 }

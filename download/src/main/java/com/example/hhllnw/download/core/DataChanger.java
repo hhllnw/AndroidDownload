@@ -68,4 +68,8 @@ public class DataChanger extends Observable {
     public void addEntityToMap(DownloadEntity entity) {
         allMaps.put(entity.getId(), entity);
     }
+
+    public boolean containsDownloadEntity(String id) {
+        return allMaps.containsKey(id);
+    }
 }

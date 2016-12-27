@@ -50,8 +50,10 @@ public class DownloadListActivity extends AppCompatActivity {
         downloadManager.setMaxTasks(3);
 
         data = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
-            data.add(new DownloadEntity(i + "", "item" + i));
+        for (int i = 0; i < 1; i++) {
+            DownloadEntity entity = new DownloadEntity("http://shouji.360tpcdn.com/150723/de6fd89a346e304f66535b6d97907563/com.sina.weibo_2057.apk");
+            entity.setId(i + "30");
+            data.add(entity);
         }
 
         for (int i = 0; i < data.size(); i++) {
@@ -106,6 +108,7 @@ public class DownloadListActivity extends AppCompatActivity {
                 viewHolder.tv_name = (TextView) view.findViewById(R.id.item_name);
                 viewHolder.btn = (Button) view.findViewById(R.id.item_btn);
                 viewHolder.tv_progress = (TextView) view.findViewById(R.id.item_progress);
+                viewHolder.btn_cancel = (Button) view.findViewById(R.id.item_btn_cancel);
                 view.setTag(viewHolder);
             } else {
                 viewHolder = (ViewHolder) view.getTag();
@@ -132,10 +135,18 @@ public class DownloadListActivity extends AppCompatActivity {
                         getItem(i).setStatus(DownloadEntity.Status.pause);
                         downloadManager.pause(getItem(i));
                     } else if (getItem(i).getStatus().equals(DownloadEntity.Status.idle)
-                            || getItem(i).getStatus().equals(DownloadEntity.Status.pause)) {
+                            || getItem(i).getStatus().equals(DownloadEntity.Status.pause)
+                            || getItem(i).getStatus() == DownloadEntity.Status.cancel) {
                         getItem(i).setStatus(DownloadEntity.Status.downloading);
                         downloadManager.add(getItem(i));
                     }
+                }
+            });
+            viewHolder.btn_cancel.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    getItem(i).setStatus(DownloadEntity.Status.cancel);
+                    downloadManager.cancel(getItem(i));
                 }
             });
             return view;
@@ -146,6 +157,7 @@ public class DownloadListActivity extends AppCompatActivity {
             TextView tv_name;
             TextView tv_progress;
             Button btn;
+            Button btn_cancel;
         }
     }
 

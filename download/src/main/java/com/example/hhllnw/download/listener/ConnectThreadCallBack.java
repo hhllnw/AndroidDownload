@@ -6,7 +6,7 @@ package com.example.hhllnw.download.listener;
  */
 
 public interface ConnectThreadCallBack {
-    public void connectResult(boolean isSupportRange, int totalLength);
+    void connectResult(boolean isSupportRange, int totalLength);
 
-    public void error(String message);
+    void connectError(String message);
 }
