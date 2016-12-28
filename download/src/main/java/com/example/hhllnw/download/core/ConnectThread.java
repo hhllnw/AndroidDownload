@@ -35,21 +35,26 @@ public class ConnectThread implements Runnable {
             }
             connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setRequestMethod("GET");
-            connection.setRequestProperty("Range", "bytes=0-" + Integer.MAX_VALUE);
+            //connection.setRequestProperty("Range", "bytes=0-" + Integer.MAX_VALUE);
             connection.setConnectTimeout(45 * 1000);
             connection.setReadTimeout(45 * 1000);
             int status = connection.getResponseCode();
             Log.e("hh", "status:" + status);
             int totalLength = connection.getContentLength();
             boolean isSupportRange = false;
-            if (status == HttpURLConnection.HTTP_PARTIAL) {
-                isSupportRange = true;
+            if (status == HttpURLConnection.HTTP_OK) {
+                String ranges = connection.getHeaderField("Accept-Ranges");
+                if ("bytes".equals(ranges)) {
+                    isSupportRange = true;
+                }
+                if (callBack != null) {
+                    callBack.connectResult(isSupportRange, totalLength);
+                }
+            } else {
+                if (callBack != null)
+                    callBack.connectError("server err:" + status);
             }
             running = false;
-            if (callBack != null) {
-                callBack.connectResult(isSupportRange, totalLength);
-            }
-
         } catch (IOException e) {
             e.printStackTrace();
             running = false;

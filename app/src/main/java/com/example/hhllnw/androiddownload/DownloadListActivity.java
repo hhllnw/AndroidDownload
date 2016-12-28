@@ -52,7 +52,7 @@ public class DownloadListActivity extends AppCompatActivity {
         data = new ArrayList<>();
         for (int i = 0; i < 1; i++) {
             DownloadEntity entity = new DownloadEntity("http://shouji.360tpcdn.com/150723/de6fd89a346e304f66535b6d97907563/com.sina.weibo_2057.apk");
-            entity.setId(i + "30");
+            entity.setId(i + "33");
             data.add(entity);
         }
 

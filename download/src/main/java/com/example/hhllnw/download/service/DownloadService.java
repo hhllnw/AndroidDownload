@@ -143,7 +143,7 @@ public class DownloadService extends Service {
     private void startDownload(DownloadEntity entity) {
         if (entity == null)
             return;
-        DownloadTask task = new DownloadTask(entity, mHandle, executors);
+        DownloadTask task = new DownloadTask(getApplicationContext(), entity, mHandle, executors);
         task.start();
         tasks.put(entity.getId(), task);
 
