@@ -6,6 +6,7 @@ import android.app.Application;
 import android.content.Context;
 
 
+import com.example.hhllnw.download.common.DownloadConfig;
 import com.example.hhllnw.download.manager.DownloadManager;
 
 import java.util.List;
@@ -28,6 +29,10 @@ public class MyApplication extends Application {
         }
 
         DownloadManager.getInstance(getApplicationContext());
+        DownloadConfig config = DownloadConfig.getInstance();
+        config.setMAX_TASKS(5);
+        config.setMAX_THREADS(3);
+        config.setDirectoryName("1_download");
 
     }
 

@@ -1,9 +1,11 @@
 package com.example.hhllnw.download.entities;
 
+import com.example.hhllnw.download.common.DownloadConfig;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
 
@@ -30,24 +32,24 @@ public class DownloadEntity implements Serializable {
     @DatabaseField(dataType = DataType.SERIALIZABLE)
     private HashMap<Integer, Integer> ranges;
     @DatabaseField
-    private int percent;
+    private String localPath;
 
     public DownloadEntity() {
     }
 
-    public DownloadEntity(String url) {
+    public DownloadEntity(String id, String url) {
+        this.id = id;
         this.url = url;
     }
 
-    public DownloadEntity(String id, String name) {
-        this.id = id;
-        this.name = name;
-    }
-
     public void reSet() {
-        this.setPercent(0);
         this.setCurLength(0);
         this.setRanges(null);
+        this.setStatus(Status.idle);
+        File file = DownloadConfig.getInstance().getFile(url);
+        if (file.exists()) {
+            file.delete();
+        }
     }
 
     public enum Status {idle, connecting, err, waiting, downloading, pause, resume, cancel, completed}
@@ -117,12 +119,12 @@ public class DownloadEntity implements Serializable {
         this.ranges = ranges;
     }
 
-    public int getPercent() {
-        return percent;
+    public String getLocalPath() {
+        return localPath;
     }
 
-    public void setPercent(int percent) {
-        this.percent = percent;
+    public void setLocalPath(String localPath) {
+        this.localPath = localPath;
     }
 
     @Override
@@ -135,5 +137,10 @@ public class DownloadEntity implements Serializable {
     @Override
     public int hashCode() {
         return id.hashCode();
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

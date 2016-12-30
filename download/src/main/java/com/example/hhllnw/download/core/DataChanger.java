@@ -72,4 +72,9 @@ public class DataChanger extends Observable {
     public boolean containsDownloadEntity(String id) {
         return allMaps.containsKey(id);
     }
+
+    public void deleteDownloadEntity(String id){
+        allMaps.remove(id);
+        OrmDBController.getmInstance(mContext).deleteById(id);
+    }
 }

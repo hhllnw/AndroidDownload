@@ -1,7 +1,6 @@
 package com.example.hhllnw.download.core;
 
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
@@ -10,6 +9,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.example.hhllnw.download.common.Constants;
+import com.example.hhllnw.download.common.DownloadConfig;
 import com.example.hhllnw.download.common.TickTack;
 import com.example.hhllnw.download.entities.DownloadEntity;
 import com.example.hhllnw.download.listener.ConnectThreadCallBack;
@@ -32,21 +32,24 @@ public class DownloadTask implements ConnectThreadCallBack, DownloadCallBack {
     private ExecutorService executors;
     private ConnectThread connectThread;
     private SubsectionDownloadThread[] subthreads;
+    private DownloadEntity.Status[] statuses;
+    private File file;
 
     public DownloadTask(Context context, DownloadEntity entity, Handler handler, ExecutorService executors) {
         this.context = context;
         this.entity = entity;
         this.handler = handler;
         this.executors = executors;
+        this.file = DownloadConfig.getInstance().getFile(entity.getUrl());
+        this.entity.setLocalPath(this.file.getPath());
     }
 
     public void start() {
-        entity.setTotalLength(-1);
         if (entity.getTotalLength() > 0) {
             startDownload();
         } else {
             entity.setStatus(DownloadEntity.Status.connecting);
-            postStatus();
+            postStatus(Constants.HANDLER_CONNECTING);
             connectThread = new ConnectThread(entity.getUrl(), this);
             executors.execute(connectThread);
         }
@@ -56,14 +59,11 @@ public class DownloadTask implements ConnectThreadCallBack, DownloadCallBack {
      * 开始下载
      */
     private void startDownload() {
-        String path = Environment.getExternalStorageDirectory() + "/1test/"
-                + entity.getUrl().substring(entity.getUrl().lastIndexOf("/") + 1);
-        File file = new File(path);
         if (!file.exists()) {
-            entity.setCurLength(0);
+            entity.reSet();
         } else {
-            if (entity.getPercent() == 100) {
-                Toast.makeText(context, "文件已经下载完成,查看路径 " + path, Toast.LENGTH_SHORT).show();
+            if (entity.getTotalLength() > 0 && entity.getCurLength() == entity.getTotalLength()) {
+                Toast.makeText(context, "文件已经下载完成", Toast.LENGTH_SHORT).show();
                 return;
             }
         }
@@ -77,9 +77,10 @@ public class DownloadTask implements ConnectThreadCallBack, DownloadCallBack {
     /**
      * 发送消息
      */
-    private void postStatus() {
+    private void postStatus(int what) {
         Message msg = Message.obtain();
         msg.obj = entity;
+        msg.what = what;
         handler.sendMessage(msg);
     }
 
@@ -128,31 +129,33 @@ public class DownloadTask implements ConnectThreadCallBack, DownloadCallBack {
      * @param totalLength
      */
     private void multilDownload(int totalLength) {
-        //entity.setTotalLength(totalLength);
+
         entity.setStatus(DownloadEntity.Status.downloading);
-        postStatus();
-        subthreads = new SubsectionDownloadThread[Constants.KEY_MAX_RANGE_THREADS];
-        int block = totalLength / Constants.KEY_MAX_RANGE_THREADS;
+        postStatus(Constants.HANDLER_DOWNLOADING);
+        subthreads = new SubsectionDownloadThread[DownloadConfig.getInstance().getMAX_THREADS()];
+        statuses = new DownloadEntity.Status[DownloadConfig.getInstance().getMAX_THREADS()];
+        int block = totalLength / DownloadConfig.getInstance().getMAX_THREADS();
         int startPosition = 0;
         int endPosition = 0;
         if (entity.getRanges() == null) {
             entity.setRanges(new HashMap<Integer, Integer>());
-            for (int i = 0; i < Constants.KEY_MAX_RANGE_THREADS; i++) {
+            for (int i = 0; i < DownloadConfig.getInstance().getMAX_THREADS(); i++) {
                 entity.getRanges().put(i, 0);
             }
         }
-        for (int i = 0; i < Constants.KEY_MAX_RANGE_THREADS; i++) {
+        for (int i = 0; i < DownloadConfig.getInstance().getMAX_THREADS(); i++) {
             startPosition = i * block + entity.getRanges().get(i);
-            if (i == Constants.KEY_MAX_RANGE_THREADS - 1) {
+            if (i == DownloadConfig.getInstance().getMAX_THREADS() - 1) {
                 endPosition = totalLength;
             } else {
                 endPosition = (i + 1) * block - 1;
             }
             if (startPosition < endPosition) {
-                subthreads[i] = new SubsectionDownloadThread(entity.getUrl(), i, startPosition, endPosition, this);
+                subthreads[i] = new SubsectionDownloadThread(entity.getUrl(), file, i, startPosition, endPosition, this);
+                statuses[i] = DownloadEntity.Status.downloading;
                 executors.execute(subthreads[i]);
             } else {
-                entity.setStatus(DownloadEntity.Status.completed);
+                statuses[i] = DownloadEntity.Status.completed;
             }
         }
     }
@@ -162,9 +165,9 @@ public class DownloadTask implements ConnectThreadCallBack, DownloadCallBack {
      */
     private void singleDownload() {
         entity.setStatus(DownloadEntity.Status.downloading);
-        postStatus();
+        postStatus(Constants.HANDLER_DOWNLOADING);
         subthreads = new SubsectionDownloadThread[1];
-        subthreads[0] = new SubsectionDownloadThread(entity.getUrl(), 0, 0, 0, this);
+        subthreads[0] = new SubsectionDownloadThread(entity.getUrl(), file, 0, 0, 0, this);
         executors.execute(subthreads[0]);
     }
 
@@ -179,10 +182,12 @@ public class DownloadTask implements ConnectThreadCallBack, DownloadCallBack {
     public void connectError(String message) {
         if (isPause || isCancel) {
             entity.setStatus(isPause ? DownloadEntity.Status.pause : DownloadEntity.Status.cancel);
+            postStatus(isPause ? Constants.HANDLER_PAUSE : Constants.HANDLER_CANCEL);
         } else {
             entity.setStatus(DownloadEntity.Status.err);
+            postStatus(Constants.HANDLER_ERROR);
         }
-        postStatus();
+
     }
 
     @Override
@@ -195,82 +200,73 @@ public class DownloadTask implements ConnectThreadCallBack, DownloadCallBack {
         entity.setCurLength(curLength);
 
         if (TickTack.getInstance().isNotify()) {
-            postStatus();
+            postStatus(Constants.HANDLER_UPDATE);
         }
 
     }
 
     @Override
     public synchronized void downloadComplete(int index) {
-
-        if (subthreads != null && subthreads.length > 0) {
-            for (int i = 0; i < subthreads.length; i++) {
-                if (subthreads[i] != null && !subthreads[i].isComplete()) {
-                    return;
-                }
+        statuses[index] = DownloadEntity.Status.completed;
+        for (int i = 0; i < statuses.length; i++) {
+            if (statuses[i] != null && statuses[i] != DownloadEntity.Status.completed) {
+                return;
             }
         }
+
         if (entity.getTotalLength() > 0 && entity.getCurLength() != entity.getTotalLength()) {
             entity.setStatus(DownloadEntity.Status.err);
             //下载出现异常，删除文件
             entity.reSet();
-            String path = Environment.getExternalStorageDirectory() + "/1test/"
-                    + entity.getUrl().substring(entity.getUrl().lastIndexOf("/") + 1);
-            File file = new File(path);
-            if (file.exists()) {
-                file.delete();
-            }
+            postStatus(Constants.HANDLER_ERROR);
         } else {
             entity.setStatus(DownloadEntity.Status.completed);
+            postStatus(Constants.HANDLER_COMPLETED);
         }
-        postStatus();
+
 
     }
 
     @Override
     public synchronized void onDownloadError(int index, String message) {
 
-        if (subthreads != null && subthreads.length > 0) {
-            for (int i = 0; i < subthreads.length; i++) {
-                if (!subthreads[i].isError()) {//把未报错的线程强制停止
-                    subthreads[i].cancelByError();
-                }
+        statuses[index] = DownloadEntity.Status.err;
+        for (int i = 0; i < statuses.length; i++) {
+            if (statuses[i] != null && statuses[i] != DownloadEntity.Status.completed && statuses[i] != DownloadEntity.Status.err) {
+                subthreads[i].cancelByError();
+                return;
             }
-            entity.setStatus(DownloadEntity.Status.err);
-            postStatus();
         }
+        entity.setStatus(DownloadEntity.Status.err);
+        postStatus(Constants.HANDLER_ERROR);
     }
 
     @Override
-    public synchronized void downloadPause() {
-        if (subthreads != null && subthreads.length > 0) {
-            for (int i = 0; i < subthreads.length; i++) {
-                if (!subthreads[i].isPause()) {
-                    return;
-                }
+    public synchronized void downloadPause(int index) {
+
+        statuses[index] = DownloadEntity.Status.pause;
+        for (int i = 0; i < statuses.length; i++) {
+            if (statuses[i] != null && statuses[i] != DownloadEntity.Status.completed && statuses[i] != DownloadEntity.Status.pause) {
+                return;
             }
-            entity.setStatus(DownloadEntity.Status.pause);
-            postStatus();
         }
+
+        entity.setStatus(DownloadEntity.Status.pause);
+        postStatus(Constants.HANDLER_PAUSE);
+
     }
 
     @Override
-    public synchronized void downloadCancel() {
-        if (subthreads != null && subthreads.length > 0) {
-            for (int i = 0; i < subthreads.length; i++) {
-                if (!subthreads[i].isCancel()) {
-                    return;
-                }
+    public synchronized void downloadCancel(int index) {
+
+        statuses[index] = DownloadEntity.Status.cancel;
+        for (int i = 0; i < statuses.length; i++) {
+            if (statuses[i] != null && statuses[i] != DownloadEntity.Status.completed && statuses[i] != DownloadEntity.Status.cancel) {
+                return;
             }
-            entity.reSet();
-            entity.setStatus(DownloadEntity.Status.cancel);
-            String path = Environment.getExternalStorageDirectory() + "/1test/"
-                    + entity.getUrl().substring(entity.getUrl().lastIndexOf("/") + 1);
-            File file = new File(path);
-            if (file.exists()) {
-                file.delete();
-            }
-            postStatus();
         }
+        entity.reSet();
+        entity.setStatus(DownloadEntity.Status.cancel);
+        postStatus(Constants.HANDLER_CANCEL);
     }
 }

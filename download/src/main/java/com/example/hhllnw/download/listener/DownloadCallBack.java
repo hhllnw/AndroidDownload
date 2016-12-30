@@ -32,10 +32,10 @@ public interface DownloadCallBack {
     /**
      * 暂停下载
      */
-    void downloadPause();
+    void downloadPause(int index);
 
     /**
      * 取消下载
      */
-    void downloadCancel();
+    void downloadCancel(int index);
 }

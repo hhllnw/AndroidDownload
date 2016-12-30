@@ -47,12 +47,12 @@ public class ConnectThread implements Runnable {
                 if ("bytes".equals(ranges)) {
                     isSupportRange = true;
                 }
-                if (callBack != null) {
-                    callBack.connectResult(isSupportRange, totalLength);
-                }
             } else {
                 if (callBack != null)
                     callBack.connectError("server err:" + status);
+            }
+            if (callBack != null) {
+                callBack.connectResult(isSupportRange, totalLength);
             }
             running = false;
         } catch (IOException e) {

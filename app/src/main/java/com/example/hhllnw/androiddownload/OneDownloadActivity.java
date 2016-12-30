@@ -24,7 +24,6 @@ public class OneDownloadActivity extends AppCompatActivity {
         @Override
         public void notifyUI(DownloadEntity o) {
             Log.e("hh", "" + o.getCurLength() + "/" + o.getTotalLength());
-            Log.e("hh", "percent:" + o.getPercent());
             Log.i("hh", "status:" + o.getStatus());
             entity = o;
         }
@@ -40,12 +39,12 @@ public class OneDownloadActivity extends AppCompatActivity {
         }
         //entity = new DownloadEntity("http://shouji.360tpcdn.com/150723/de6fd89a346e304f66535b6d97907563/com.sina.weibo_2057.apk");
         //entity = new DownloadEntity("http://f.hiphotos.baidu.com/image/pic/item/0bd162d9f2d3572ce46b99dd8813632762d0c322.jpg");
-        entity = new DownloadEntity("http://58.214.246.162:10119/file/a6acb416-d1cd-4d3c-b48f-72db8117180d.png");
-        entity.setId(5 + "11");
+        entity = new DownloadEntity("11","http://58.214.246.162:10119/file/a6acb416-d1cd-4d3c-b48f-72db8117180d.png");
+        entity.setId(5 + "20");
         findViewById(R.id.btn_start).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                downloadManager.add(entity);
+                downloadManager.add(entity);//
             }
         });
 
