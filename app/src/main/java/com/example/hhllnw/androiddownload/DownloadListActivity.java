@@ -2,6 +2,7 @@ package com.example.hhllnw.androiddownload;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,6 +17,7 @@ import com.example.hhllnw.download.core.DataWatcher;
 import com.example.hhllnw.download.entities.DownloadEntity;
 import com.example.hhllnw.download.manager.DownloadManager;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,14 +49,18 @@ public class DownloadListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_download_list);
         mListView = (ListView) findViewById(R.id.mListView);
         downloadManager = DownloadManager.getInstance(this);
-        downloadManager.setMaxTasks(3);
 
         data = new ArrayList<>();
-        for (int i = 0; i < 1; i++) {
-            DownloadEntity entity = new DownloadEntity("http://shouji.360tpcdn.com/150723/de6fd89a346e304f66535b6d97907563/com.sina.weibo_2057.apk");
-            entity.setId(i + "33");
-            data.add(entity);
-        }
+        data.add(new DownloadEntity("1", "http://shouji.360tpcdn.com/150723/de6fd89a346e304f66535b6d97907563/com.sina.weibo_2057.apk"));
+        data.add(new DownloadEntity("2", "http://shouji.360tpcdn.com/150706/f67f98084d6c788a0f4593f588ea9dfc/com.taobao.taobao_121.apk"));
+        data.add(new DownloadEntity("3", "http://shouji.360tpcdn.com/150720/789cd3f2facef6b27004d9f813599463/com.mfw.roadbook_147.apk"));
+        data.add(new DownloadEntity("4", "http://shouji.360tpcdn.com/150810/10805820b9fbe1eeda52be289c682651/com.qihoo.vpnmaster_3019020.apk"));
+        data.add(new DownloadEntity("5", "http://shouji.360tpcdn.com/150730/580642ffcae5fe8ca311c53bad35bcf2/com.taobao.trip_3001032.apk"));
+        data.add(new DownloadEntity("6", "http://shouji.360tpcdn.com/150807/42ac3ad85a189125701e69ccff36ad7a/com.eg.android.AlipayGphone_78.apk"));
+        data.add(new DownloadEntity("7", "http://shouji.360tpcdn.com/150813/9e775b5afb66feb960941cd8879af0b8/com.sankuai.meituan_291.apk"));
+        data.add(new DownloadEntity("8", "http://shouji.360tpcdn.com/150706/5a9bec48b764a892df801424278a4285/com.mt.mtxx.mtxx_434.apk"));
+        data.add(new DownloadEntity("9", "http://shouji.360tpcdn.com/150707/2ef5e16e0b8b3135aa714ad9b56b9a3d/com.happyelements.AndroidAnimal_25.apk"));
+        data.add(new DownloadEntity("10", "http://shouji.360tpcdn.com/150716/aea8ca0e6617b0989d3dcce0bb9877d5/com.cmge.xianjian.a360_30.apk"));
 
         for (int i = 0; i < data.size(); i++) {
             if (data.get(i) != null) {
@@ -68,6 +74,26 @@ public class DownloadListActivity extends AppCompatActivity {
 
         myAdapter = new MyAdapter();
         mListView.setAdapter(myAdapter);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (data == null) return;
+        for (int i = 0; i < data.size(); i++) {
+            DownloadEntity entity = downloadManager.findDownloadEntityById(data.get(i).getId());
+            if (entity != null && entity.getLocalPath() != null) {
+                File file = new File(entity.getLocalPath());
+                if (!file.exists()) {
+                    data.remove(i);
+                    DownloadEntity entity1 = new DownloadEntity(entity.getId(), entity.getUrl());
+                    entity1.setStatus(DownloadEntity.Status.idle);
+                    downloadManager.deleteDownloadEnttiy(entity.getId());
+                    data.add(i, entity1);
+                }
+                myAdapter.notifyDataSetChanged();
+            }
+        }
     }
 
     @Override
@@ -126,7 +152,7 @@ public class DownloadListActivity extends AppCompatActivity {
             } else if (getItem(i).getStatus() == DownloadEntity.Status.waiting) {
                 viewHolder.btn.setText("等待下载");
             }
-            viewHolder.tv_progress.setText(getItem(i).getCurLength() + "/" + getItem(i).getTotalLength() + "  状态：" + getItem(i).getStatus());
+            viewHolder.tv_progress.setText(Formatter.formatFileSize(getApplication(), getItem(i).getCurLength()) + "/" + Formatter.formatFileSize(getApplication(), getItem(i).getTotalLength()) + "  状态：" + getItem(i).getStatus());
 
             viewHolder.btn.setOnClickListener(new View.OnClickListener() {
                 @Override

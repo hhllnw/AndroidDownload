@@ -8,11 +8,13 @@ import android.os.Message;
 import android.util.Log;
 
 import com.example.hhllnw.download.common.Constants;
+import com.example.hhllnw.download.common.DownloadConfig;
 import com.example.hhllnw.download.core.DataChanger;
 import com.example.hhllnw.download.core.DownloadTask;
 import com.example.hhllnw.download.db.OrmDBController;
 import com.example.hhllnw.download.entities.DownloadEntity;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -32,7 +34,6 @@ public class DownloadService extends Service {
     private LinkedBlockingDeque<DownloadEntity> waitDeques;
     private ExecutorService executors;
     private DataChanger mDataChanger;
-    private int MAX_TASKS = 5;
     private OrmDBController dbController;
 
     @Override
@@ -54,14 +55,14 @@ public class DownloadService extends Service {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            this.obtainMessage();
             DownloadEntity entity = (DownloadEntity) msg.obj;
+            int waht = msg.what;
             if (entity == null) return;
-            switch (entity.getStatus()) {
-                case completed:
-                case cancel:
-                case pause:
-                case err:
+            switch (waht) {
+                case Constants.HANDLER_COMPLETED:
+                case Constants.HANDLER_CANCEL:
+                case Constants.HANDLER_PAUSE:
+                case Constants.HANDLER_ERROR:
                     tasks.remove(entity);
                     nextDownload();
                     break;
@@ -96,10 +97,6 @@ public class DownloadService extends Service {
             action = intent.getIntExtra(Constants.KEY_INTENT_ACTION, -1);
         }
 
-        if (intent.hasExtra(Constants.KEY_INTENT_MAX_TASKS)) {
-            MAX_TASKS = intent.getIntExtra(Constants.KEY_INTENT_MAX_TASKS, MAX_TASKS);
-        }
-
         doAction(entity, action);
         return super.onStartCommand(intent, flags, startId);
     }
@@ -131,7 +128,7 @@ public class DownloadService extends Service {
 
     private void addDownload(DownloadEntity entity) {
 
-        if (tasks != null && tasks.size() >= MAX_TASKS) {
+        if (tasks != null && tasks.size() >= DownloadConfig.getInstance().getMAX_TASKS()) {
             entity.setStatus(DownloadEntity.Status.waiting);
             waitDeques.offer(entity);
             mDataChanger.postStatus(entity);
@@ -146,8 +143,6 @@ public class DownloadService extends Service {
         DownloadTask task = new DownloadTask(getApplicationContext(), entity, mHandle, executors);
         task.start();
         tasks.put(entity.getId(), task);
-
-        //executors.execute(task);
     }
 
     private void pauseDownload(DownloadEntity entity) {
@@ -222,9 +217,33 @@ public class DownloadService extends Service {
             while (iterator.hasNext()) {
                 DownloadEntity entity = iterator.next();
                 if (entity != null) {
-                    /*if (entity.getStatus() == DownloadEntity.Status.pause) {
-                        entity.setStatus(DownloadEntity.Status.downloading);
-                    }*/
+                    if (entity.getStatus() == DownloadEntity.Status.downloading || entity.getStatus() == DownloadEntity.Status.idle) {
+                        if (DownloadConfig.getInstance().isRecover()) {
+                            if (entity.isSupportRange()) {
+                                entity.setStatus(DownloadEntity.Status.pause);
+                            } else {
+                                entity.setStatus(DownloadEntity.Status.idle);
+                                entity.reSet();
+                            }
+                            addDownload(entity);
+                        } else {
+                            if (entity.isSupportRange()) {
+                                entity.setStatus(DownloadEntity.Status.pause);
+                            } else {
+                                entity.setStatus(DownloadEntity.Status.idle);
+                                entity.reSet();
+                            }
+                            dbController.createOrUpdate(entity);
+                        }
+                    }
+
+                    if (entity.getLocalPath() != null && !"".equals(entity.getLocalPath())) {
+                        File file = new File(entity.getLocalPath());
+                        if (!file.exists()) {
+                            dbController.deleteById(entity.getId());
+                        }
+                    }
+
                     mDataChanger.addEntityToMap(entity);
                 }
             }

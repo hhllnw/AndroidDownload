@@ -9,6 +9,7 @@ import com.example.hhllnw.download.core.DataWatcher;
 import com.example.hhllnw.download.entities.DownloadEntity;
 import com.example.hhllnw.download.service.DownloadService;
 
+import java.io.File;
 import java.util.ArrayList;
 
 /**
@@ -20,7 +21,6 @@ public class DownloadManager {
 
     private static DownloadManager mDownloadManager;
     private final Context mContext;
-    private int MAX_TASKS = 5;//最大线程数
 
     private DownloadManager(Context context) {
         this.mContext = context;
@@ -72,17 +72,7 @@ public class DownloadManager {
         Intent it = new Intent(mContext, DownloadService.class);
         it.putExtra(Constants.KEY_INTENT_ENTITY, entity);
         it.putExtra(Constants.KEY_INTENT_ACTION, action);
-        it.putExtra(Constants.KEY_INTENT_MAX_TASKS, MAX_TASKS);
         mContext.startService(it);
-    }
-
-    /**
-     * 最大下载数
-     *
-     * @param MAX_TASKS
-     */
-    public void setMaxTasks(int MAX_TASKS) {
-        this.MAX_TASKS = MAX_TASKS;
     }
 
     /**
@@ -93,6 +83,24 @@ public class DownloadManager {
      */
     public DownloadEntity findDownloadEntityById(String id) {
         return DataChanger.getInstance(mContext).queryDownloadEntityById(id);
+    }
+
+    /**
+     * 删除缓存及文件
+     *
+     * @param id
+     */
+    public void deleteDownloadEnttiy(String id) {
+        if (id == null || "".equals(id))
+            return;
+        DownloadEntity entity = findDownloadEntityById(id);
+        if (entity != null && entity.getLocalPath() != null) {
+            File file = new File(entity.getLocalPath());
+            if (file.exists()) {
+                file.delete();
+            }
+        }
+        DataChanger.getInstance(mContext).deleteDownloadEntity(id);
     }
 
     /**

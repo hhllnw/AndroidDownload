@@ -1,6 +1,5 @@
 package com.example.hhllnw.download.core;
 
-import android.os.Environment;
 import android.util.Log;
 import android.webkit.URLUtil;
 
@@ -26,7 +25,6 @@ public class SubsectionDownloadThread implements Runnable {
     private int endPosition;
     private int index;
     private DownloadCallBack callBack;
-    private String path;
     private DownloadEntity.Status mStatus;
     private volatile boolean isPause;
     private volatile boolean isCancelled;
@@ -34,14 +32,15 @@ public class SubsectionDownloadThread implements Runnable {
     private boolean isSingle;
     private int CONNECT_TIME_OUT = 1000 * 45;
     private int READ_TIME_OUT = 1000 * 45;
+    private File file;
 
-    public SubsectionDownloadThread(String url, int index, int startPosition, int endPosition, DownloadCallBack callBack) {
+    public SubsectionDownloadThread(String url,File file, int index, int startPosition, int endPosition, DownloadCallBack callBack) {
         this.url = url;
         this.index = index;
         this.startPosition = startPosition;
         this.endPosition = endPosition;
         this.callBack = callBack;
-        this.path = Environment.getExternalStorageDirectory() + "/1test/";
+        this.file = file;
         if (startPosition == 0 && endPosition == 0) {
             isSingle = true;
         } else {
@@ -72,8 +71,8 @@ public class SubsectionDownloadThread implements Runnable {
             connection.setConnectTimeout(CONNECT_TIME_OUT);
             connection.setReadTimeout(READ_TIME_OUT);
             int status = connection.getResponseCode();
-            makeRootDirectory(path);
-            File file = new File(path + url.substring(url.lastIndexOf("/") + 1));
+            //makeRootDirectory(path);
+            //File file = new File(path + url.substring(url.lastIndexOf("/") + 1));
 
             if (status == HttpURLConnection.HTTP_PARTIAL) {//多线程分段下载 206
                 accessFile = new RandomAccessFile(file, "rw");
@@ -113,10 +112,10 @@ public class SubsectionDownloadThread implements Runnable {
             if (callBack != null) {
                 if (isPause) {
                     mStatus = DownloadEntity.Status.pause;
-                    callBack.downloadPause();
+                    callBack.downloadPause(index);
                 } else if (isCancelled) {
                     mStatus = DownloadEntity.Status.cancel;
-                    callBack.downloadCancel();
+                    callBack.downloadCancel(index);
                 } else if (isError) {
                     mStatus = DownloadEntity.Status.err;
                     callBack.onDownloadError(index, "err");
@@ -130,10 +129,10 @@ public class SubsectionDownloadThread implements Runnable {
             if (callBack != null) {
                 if (isPause) {
                     mStatus = DownloadEntity.Status.pause;
-                    callBack.downloadPause();
+                    callBack.downloadPause(index);
                 } else if (isCancelled) {
                     mStatus = DownloadEntity.Status.cancel;
-                    callBack.downloadCancel();
+                    callBack.downloadCancel(index);
                 } else {
                     mStatus = DownloadEntity.Status.err;
                     callBack.onDownloadError(index, e.getMessage());
@@ -168,22 +167,6 @@ public class SubsectionDownloadThread implements Runnable {
         }
     }
 
-    /**
-     * 创建目录
-     *
-     * @param filePath
-     */
-    public void makeRootDirectory(String filePath) {
-        try {
-            File file = new File(filePath);
-            if (!file.exists()) {
-                file.mkdir();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public boolean isRunning() {
         return mStatus == DownloadEntity.Status.downloading;
     }
@@ -193,29 +176,13 @@ public class SubsectionDownloadThread implements Runnable {
         Thread.currentThread().interrupt();
     }
 
-    public boolean isPause() {
-        return mStatus == DownloadEntity.Status.pause || mStatus == DownloadEntity.Status.completed;
-    }
-
     public void cancel() {
         isCancelled = true;
         Thread.currentThread().interrupt();
     }
 
-    public boolean isCancel() {
-        return mStatus == DownloadEntity.Status.cancel || mStatus == DownloadEntity.Status.completed;
-    }
-
-    public boolean isError() {
-        return mStatus == DownloadEntity.Status.err;
-    }
-
     public void cancelByError() {
         isError = true;
         Thread.currentThread().interrupt();
-    }
-
-    public boolean isComplete() {
-        return mStatus == DownloadEntity.Status.completed;
     }
 }
