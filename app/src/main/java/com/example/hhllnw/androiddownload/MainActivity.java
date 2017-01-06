@@ -1,35 +1,16 @@
 package com.example.hhllnw.androiddownload;
 
 import android.Manifest;
-import android.app.ActivityManager;
-import android.app.usage.UsageStats;
-import android.app.usage.UsageStatsManager;
-import android.content.ComponentName;
-import android.content.Context;
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.widget.TextView;
 
-import org.w3c.dom.Text;
 
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import android.widget.TextView;
 
-import org.w3c.dom.Text;
 
 public class MainActivity extends AppCompatActivity {
 
