@@ -32,7 +32,7 @@ public class MyApplication extends Application {
         DownloadConfig config = DownloadConfig.getInstance();
         config.setMAX_TASKS(5);
         config.setMAX_THREADS(3);
-        config.setDirectoryName("1_download");
+        config.setDirectoryName("TYSX/skin");
 
     }
 

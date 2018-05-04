@@ -2,7 +2,6 @@ package com.example.hhllnw.download.core;
 
 
 import android.content.Context;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -167,6 +166,7 @@ public class DownloadTask implements ConnectThreadCallBack, DownloadCallBack {
         entity.setStatus(DownloadEntity.Status.downloading);
         postStatus(Constants.HANDLER_DOWNLOADING);
         subthreads = new SubsectionDownloadThread[1];
+        statuses = new DownloadEntity.Status[1];
         subthreads[0] = new SubsectionDownloadThread(entity.getUrl(), file, 0, 0, 0, this);
         executors.execute(subthreads[0]);
     }
